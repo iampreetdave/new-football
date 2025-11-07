@@ -22,7 +22,7 @@ DB_CONFIG = {
     'password': 'deeptanshu@123'
 }
 
-TABLE_NAME = 'agility_football_v2'
+TABLE_NAME = 'agility_football_pred'
 CSV_FILE = 'predictions_output.csv'
 
 # ==================== LEAGUE ID MAPPING ====================
@@ -71,6 +71,10 @@ try:
     # Map league_id to league_name
     df['league_name'] = df['league_id'].apply(get_league_name)
     print(f"✓ Mapped league names from league IDs")
+    
+    # Parse and format date
+    df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d', errors='coerce')
+    print(f"✓ Parsed dates from CSV")
     
 except Exception as e:
     print(f"✗ Error loading CSV: {e}")
