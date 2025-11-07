@@ -1,8 +1,8 @@
 """
 Save Football Predictions to PostgreSQL Database
-Reads predictions_output.csv and inserts into agility_football_pred table
+Reads predictions_output.csv and inserts into agility_football_v2 table
 - Checks for existing match_ids to avoid duplicates
-- Maps league_id to league_name using league mapping
+- Maps league_id to league_name and stores in league column
 - Handles NULL values properly
 - Simple and straightforward storage
 """
@@ -23,7 +23,6 @@ DB_CONFIG = {
 }
 
 TABLE_NAME = 'agility_football_v2'
-SCHEMA_NAME = 'public'
 CSV_FILE = 'predictions_output.csv'
 
 # ==================== LEAGUE ID MAPPING ====================
@@ -92,8 +91,7 @@ except Exception as e:
 # ==================== CHECK FOR EXISTING RECORDS ====================
 print(f"\n[3/4] Checking for existing records...")
 try:
-    cursor.execute(sql.SQL("SELECT match_id FROM {}.{}").format(
-        sql.Identifier(SCHEMA_NAME),
+    cursor.execute(sql.SQL("SELECT match_id FROM {}").format(
         sql.Identifier(TABLE_NAME)
     ))
     existing_ids = set([row[0] for row in cursor.fetchall()])
@@ -126,8 +124,8 @@ if len(new_data) == 0:
 print(f"\n[4/4] Inserting {len(new_data)} new records...")
 
 insert_query = sql.SQL("""
-    INSERT INTO {}.{} (
-        match_id, home_id, away_id, league_id, league_name, date,
+    INSERT INTO {} (
+        match_id, home_id, away_id, league_id, league, date,
         home_team, away_team, ou_prediction, ou_probability,
         over_2_5_odds, under_2_5_odds, ml_prediction, ml_probability,
         home_win_odds, away_win_odds, ou_confidence, ml_confidence,
@@ -136,7 +134,7 @@ insert_query = sql.SQL("""
         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
     )
-""").format(sql.Identifier(SCHEMA_NAME), sql.Identifier(TABLE_NAME))
+""").format(sql.Identifier(TABLE_NAME))
 
 inserted = 0
 errors = 0
@@ -214,8 +212,7 @@ print("DATABASE STATE")
 print("="*80)
 
 try:
-    cursor.execute(sql.SQL("SELECT COUNT(*) FROM {}.{}").format(
-        sql.Identifier(SCHEMA_NAME),
+    cursor.execute(sql.SQL("SELECT COUNT(*) FROM {}").format(
         sql.Identifier(TABLE_NAME)
     ))
     total = cursor.fetchone()[0]
