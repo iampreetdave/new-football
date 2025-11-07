@@ -1,7 +1,8 @@
 """
 Save Football Predictions to PostgreSQL Database
-Reads predictions_output.csv and inserts into agility_fotball_v2 table
+Reads predictions_output.csv and inserts into agility_football_pred table
 - Checks for existing match_ids to avoid duplicates
+- Maps league_id to league_name using league mapping
 - Handles NULL values properly
 - Simple and straightforward storage
 """
@@ -21,9 +22,40 @@ DB_CONFIG = {
     'password': 'deeptanshu@123'
 }
 
-TABLE_NAME = 'agility_fotball_v2'
+TABLE_NAME = 'agility_football_pred'
 SCHEMA_NAME = 'public'
 CSV_FILE = 'predictions_output.csv'
+
+# ==================== LEAGUE ID MAPPING ====================
+LEAGUE_MAPPING = {
+    12325: "England Premier League",
+    15050: "England Premier League",
+    13497: "Europe UEFA Youth League",
+    16004: "Europe UEFA Youth League",
+    12316: "Spain La Liga",
+    14956: "Spain La Liga",
+    12530: "Italy Serie A",
+    15068: "Italy Serie A",
+    12529: "Germany Bundesliga",
+    14968: "Germany Bundesliga",
+    13973: "USA MLS",
+    12337: "France Ligue 1",
+    14932: "France Ligue 1",
+    12322: "Netherlands Eredivisie",
+    14936: "Netherlands Eredivisie",
+    12585: "Portugal LigaPro",
+    15717: "Portugal LigaPro",
+    12136: "Mexico Liga MX",
+    15234: "Mexico Liga MX"
+}
+
+def get_league_name(league_id):
+    """Get league name from league_id using the mapping"""
+    try:
+        league_id_int = int(league_id)
+        return LEAGUE_MAPPING.get(league_id_int, "Unknown League")
+    except:
+        return "Unknown League"
 
 print("="*80)
 print("SAVING PREDICTIONS TO DATABASE")
@@ -36,6 +68,10 @@ try:
     df = pd.read_csv(CSV_FILE)
     print(f"✓ Loaded {len(df)} records from CSV")
     print(f"  Columns: {len(df.columns)}")
+    
+    # Map league_id to league_name
+    df['league_name'] = df['league_id'].apply(get_league_name)
+    print(f"✓ Mapped league names from league IDs")
     
 except Exception as e:
     print(f"✗ Error loading CSV: {e}")
@@ -91,7 +127,7 @@ print(f"\n[4/4] Inserting {len(new_data)} new records...")
 
 insert_query = sql.SQL("""
     INSERT INTO {}.{} (
-        match_id, home_id, away_id, league_id, date, league,
+        match_id, home_id, away_id, league_id, league_name, date,
         home_team, away_team, ou_prediction, ou_probability,
         over_2_5_odds, under_2_5_odds, ml_prediction, ml_probability,
         home_win_odds, away_win_odds, ou_confidence, ml_confidence,
@@ -114,8 +150,8 @@ for idx, row in new_data.iterrows():
             row['home_id'],
             row['away_id'],
             row['league_id'],
+            row['league_name'],
             row['date'],
-            row['league'],
             row['home_team'],
             row['away_team'],
             row['ou_prediction'],
