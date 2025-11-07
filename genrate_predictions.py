@@ -246,4 +246,4 @@ class InferencePipeline:
 
 if __name__ == "__main__":
     pipeline = InferencePipeline()
-    output = pipeline.run('extracted_features_complete__2_.csv')
+    output = pipeline.run('extracted_features_complete.csv')
