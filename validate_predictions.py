@@ -1,23 +1,25 @@
 """
-FOOTBALL PREDICTIONS VALIDATION SCRIPT
-Fetches actual match results from API and updates database
-Calculates profit/loss based on predictions vs actual results
+FIXED VALIDATION SCRIPT - Correct Column Names for agility_football_v2
+This script reads from CSV and validates match results
+Updates database with proper column mapping
 """
 
 import pandas as pd
 import requests
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import warnings
 import psycopg2
 from psycopg2 import sql
+from pathlib import Path
 import json
 warnings.filterwarnings('ignore')
 
 # ==================== API CONFIGURATION ====================
 API_KEY = "633379bdd5c4c3eb26919d8570866801e1c07f399197ba8c5311446b8ea77a49"
 
-API_ENDPOINTS = [
+# Try multiple API endpoint configurations
+API_CONFIGS = [
     {"url": "https://api.football-data-api.com/match", "param": "match_id"},
     {"url": "https://api.footystats.org/match", "param": "id"},
     {"url": "https://api.footystats.org/match", "param": "match_id"},
@@ -34,268 +36,312 @@ DB_CONFIG = {
 
 TABLE_NAME = 'agility_football_v2'
 
-print("="*80)
-print("FOOTBALL PREDICTIONS VALIDATION")
+print("\n" + "="*80)
+print("AGILITY FOOTBALL PREDICTIONS - CSV-BASED VALIDATION")
 print("="*80)
 print(f"Timestamp: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
 
 # ==================== DATABASE CONNECTION ====================
-print(f"\n[1/4] Connecting to database...")
+print("\n[1/5] Connecting to PostgreSQL Database...")
+print("="*80)
+
 try:
     conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
-    print(f"✓ Connected to {DB_CONFIG['database']}")
+    print(f"✓ Connected to database: {DB_CONFIG['database']}")
     print(f"✓ Table: {TABLE_NAME}")
 except Exception as e:
-    print(f"✗ Connection error: {e}")
+    print(f"✗ Database connection failed: {e}")
     exit(1)
 
-# ==================== LOAD PENDING PREDICTIONS ====================
-print(f"\n[2/4] Loading pending predictions from database...")
+# ==================== CONFIGURATION ====================
+VALIDATION_DATE = (datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d')
+print(f"\n📅 Validation Date: {VALIDATION_DATE}")
+
+# ==================== LOAD PREDICTIONS FROM CSV ====================
+print("\n[2/5] Loading predictions from CSV...")
+print("="*80)
+
 try:
-    query = sql.SQL("""
-        SELECT match_id, home_team, away_team,
-               ou_prediction, ou_probability, over_2_5_odds, under_2_5_odds,
-               ml_prediction, ml_probability, home_win_odds, away_win_odds
-        FROM {}
-        WHERE home_goals IS NULL OR away_goals IS NULL
-        LIMIT 100
-    """).format(sql.Identifier(TABLE_NAME))
+    # Try different possible locations
+    possible_paths = [
+        Path('/mnt/user-data/uploads/predictions_output.csv'),
+        Path('predictions_output.csv'),
+        
+    ]
     
-    cursor.execute(query)
-    columns = [desc[0] for desc in cursor.description]
-    rows = cursor.fetchall()
-    predictions_df = pd.DataFrame(rows, columns=columns)
+    predictions_df = None
+    for path in possible_paths:
+        if path.exists():
+            predictions_df = pd.read_csv(path)
+            print(f"✓ Loaded CSV from: {path}")
+            break
     
-    print(f"✓ Loaded {len(predictions_df)} pending predictions")
-    
-    if len(predictions_df) == 0:
-        print("\n✓ No pending predictions to validate")
+    if predictions_df is None:
+        print(f"✗ Could not find CSV file. Tried:")
+        for p in possible_paths:
+            print(f"  - {p}")
         cursor.close()
         conn.close()
-        exit(0)
+        exit(1)
     
+    print(f"✓ Loaded {len(predictions_df)} total predictions")
+    print(f"✓ CSV Columns: {list(predictions_df.columns)[:10]}...")
+
 except Exception as e:
-    print(f"✗ Error loading predictions: {e}")
+    print(f"✗ Error loading CSV: {e}")
+    import traceback
+    traceback.print_exc()
     cursor.close()
     conn.close()
     exit(1)
 
-# ==================== TEST API ====================
-print(f"\n[3/4] Testing API configuration...")
-working_config = None
-test_match_id = predictions_df.iloc[0]['match_id']
+# ==================== FILTER BY DATE ====================
+print("\n[3/5] Filtering predictions by date...")
+print("="*80)
+
+predictions_df['date'] = pd.to_datetime(predictions_df['date']).dt.date
+validation_date_obj = pd.to_datetime(VALIDATION_DATE).date()
+predictions_to_validate = predictions_df[predictions_df['date'] == validation_date_obj].copy()
+
+if len(predictions_to_validate) == 0:
+    print(f"ℹ No predictions found for {VALIDATION_DATE}")
+    cursor.close()
+    conn.close()
+    exit(0)
+
+print(f"✓ Found {len(predictions_to_validate)} predictions to validate")
+
+# ==================== TEST API FIRST ====================
+print("\n[4/5] Testing API configurations...")
+print("="*80)
+
+working_api_config = None
+test_match_id = predictions_to_validate.iloc[0]['match_id']
 
 print(f"Testing with match ID: {test_match_id}\n")
 
-for i, config in enumerate(API_ENDPOINTS, 1):
+for i, config in enumerate(API_CONFIGS, 1):
     try:
-        print(f"  [{i}/{len(API_ENDPOINTS)}] Testing {config['url']}...", end=" ")
-        response = requests.get(
-            config['url'],
-            params={'key': API_KEY, config['param']: test_match_id},
-            timeout=15
-        )
+        url = f"{config['url']}?key={API_KEY}&{config['param']}={test_match_id}"
+        print(f"[{i}/{len(API_CONFIGS)}] Testing: {config['url']} with {config['param']}=...")
         
-        if response.status_code == 200:
+        response = requests.get(config['url'], 
+                               params={'key': API_KEY, config['param']: test_match_id},
+                               timeout=30)
+        
+        if response.status_code == 200 and response.text:
             try:
                 data = response.json()
                 if data.get('success') and data.get('data'):
-                    print("✓ WORKING")
-                    working_config = config
+                    print(f"✓ SUCCESS! This configuration works")
+                    working_api_config = config
                     break
                 else:
-                    print("✗ No data")
+                    print(f"✗ API returned success=false")
             except:
-                print("✗ JSON error")
+                print(f"✗ Invalid JSON")
         else:
             print(f"✗ HTTP {response.status_code}")
+            
     except Exception as e:
-        print(f"✗ {str(e)[:30]}")
+        print(f"✗ Error: {str(e)[:50]}")
     
     time.sleep(0.3)
 
-if not working_config:
-    print(f"\n✗ ERROR: No working API found")
+if not working_api_config:
+    print(f"\n❌ ERROR: No working API configuration found!")
+    print(f"\n💡 SOLUTIONS:")
+    print(f"   1. Your match IDs ({test_match_id}) are not compatible with these APIs")
+    print(f"   2. Check if match IDs are from a different source (RapidAPI, etc.)")
+    print(f"   3. Verify your API key has access to match data")
+    print(f"   4. The matches might be too old or not yet in the API")
     cursor.close()
     conn.close()
     exit(1)
 
-print(f"\n✓ Using: {working_config['url']}")
+print(f"\n✓ Using: {working_api_config['url']} with parameter '{working_api_config['param']}'")
 
-# ==================== VALIDATE PREDICTIONS ====================
-print(f"\n[4/4] Validating predictions...")
+# ==================== FETCH & UPDATE ====================
+print("\n[5/5] Fetching match results and updating database...")
 print("="*80)
 
-validated = 0
-failed = 0
+successful_updates = 0
+failed_fetches = 0
 
-for idx, row in predictions_df.iterrows():
+for idx, row in predictions_to_validate.iterrows():
     match_id = row['match_id']
-    home_team = row['home_team']
-    away_team = row['away_team']
     
-    # Get prediction data
-    ou_pred = row['ou_prediction']  # "Over 2.5" or "Under 2.5"
-    ml_pred = row['ml_prediction']  # "Home Win" or "Away Win"
+    # Get prediction data from CSV (using actual CSV column names)
+    predicted_ou = row.get('ou_prediction', '')
+    predicted_winner = row.get('ml_prediction', '')
     
-    # Get odds data
-    over_odds = row['over_2_5_odds']
-    under_odds = row['under_2_5_odds']
-    home_odds = row['home_win_odds']
-    away_odds = row['away_win_odds']
+    # Get odds data with correct CSV column names
+    odds_over = float(row.get('over_2_5_odds', 0))
+    odds_under = float(row.get('under_2_5_odds', 0))
+    odds_home = float(row.get('home_win_odds', 0))
+    odds_away = float(row.get('away_win_odds', 0))
+    # Draw odds might not be in CSV, try to get it or default to 0
+    odds_draw = float(row.get('draw_odds', 0))
+    
+    home_team = row.get('home_team', '')
+    away_team = row.get('away_team', '')
     
     try:
-        # Fetch match result
+        # Fetch match details using working config
         response = requests.get(
-            working_config['url'],
-            params={'key': API_KEY, working_config['param']: match_id},
-            timeout=15
+            working_api_config['url'],
+            params={'key': API_KEY, working_api_config['param']: match_id},
+            timeout=30
         )
         
-        if response.status_code != 200:
+        if response.status_code == 200 and response.text:
+            try:
+                data = response.json()
+            except json.JSONDecodeError:
+                print(f"✗ {match_id}: JSON error")
+                failed_fetches += 1
+                continue
+            
+            if data.get('success') and data.get('data'):
+                match_data = data['data']
+                status = match_data.get('status', '')
+                
+                if status == 'complete':
+                    # Get scores
+                    home_score = int(match_data.get('homeGoalCount', 0))
+                    away_score = int(match_data.get('awayGoalCount', 0))
+                    total_goals = home_score + away_score
+                    
+                    # Determine winner (for ml_actual)
+                    if home_score > away_score:
+                        actual_winner = 'Home Win'
+                    elif away_score > home_score:
+                        actual_winner = 'Away Win'
+                    else:
+                        actual_winner = 'Draw'
+                    
+                    # Determine O/U (for ou_actual)
+                    actual_over_under = 'Over 2.5' if total_goals > 2.5 else 'Under 2.5'
+                    
+                    # Calculate correctness
+                    ou_correct = 1 if predicted_ou == actual_over_under else 0
+                    ml_correct = 1 if predicted_winner == actual_winner else 0
+                    
+                    # Calculate P/L for Over/Under (ou_pnl)
+                    if 'Over' in str(predicted_ou):
+                        ou_pnl = round(odds_over - 1, 2) if total_goals > 2.5 else -1.0
+                    else:
+                        ou_pnl = round(odds_under - 1, 2) if total_goals <= 2.5 else -1.0
+                    
+                    # Calculate P/L for Winner (ml_pnl)
+                    if predicted_winner == 'Home Win':
+                        ml_pnl = round(odds_home - 1, 2) if actual_winner == 'Home Win' else -1.0
+                    elif predicted_winner == 'Away Win':
+                        ml_pnl = round(odds_away - 1, 2) if actual_winner == 'Away Win' else -1.0
+                    elif predicted_winner == 'Draw':
+                        ml_pnl = round(odds_draw - 1, 2) if actual_winner == 'Draw' else -1.0
+                    else:
+                        ml_pnl = 0.0
+                    
+                    # Update database with CORRECT column names
+                    update_query = sql.SQL("""
+                        UPDATE {}
+                        SET 
+                            ml_actual = %s,
+                            ou_actual = %s,
+                            home_goals = %s,
+                            away_goals = %s,
+                            total_goals = %s,
+                            ou_correct = %s,
+                            ml_correct = %s,
+                            ou_pnl = %s,
+                            ml_pnl = %s,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE match_id = %s
+                    """).format(sql.Identifier(TABLE_NAME))
+                    
+                    cursor.execute(update_query, (
+                        actual_winner,
+                        actual_over_under,
+                        float(home_score),
+                        float(away_score),
+                        float(total_goals),
+                        ou_correct,
+                        ml_correct,
+                        ou_pnl,
+                        ml_pnl,
+                        str(match_id)
+                    ))
+                    
+                    conn.commit()
+                    successful_updates += 1
+                    
+                    print(f"✓ {match_id}: {home_team} {home_score}-{away_score} {away_team}")
+                    print(f"  → Winner: {actual_winner} (Predicted: {predicted_winner}) {'✓' if ml_correct else '✗'}")
+                    print(f"  → O/U: {actual_over_under} (Predicted: {predicted_ou}) {'✓' if ou_correct else '✗'}")
+                    print(f"  → P/L: O/U=${ou_pnl:.2f} | ML=${ml_pnl:.2f}")
+                    
+                else:
+                    print(f"⏳ {match_id}: Not complete (status: {status})")
+                    failed_fetches += 1
+            else:
+                print(f"⚠ {match_id}: No data")
+                failed_fetches += 1
+        else:
             print(f"✗ {match_id}: HTTP {response.status_code}")
-            failed += 1
-            continue
+            failed_fetches += 1
         
-        try:
-            data = response.json()
-        except json.JSONDecodeError:
-            print(f"✗ {match_id}: Invalid JSON")
-            failed += 1
-            continue
-        
-        if not data.get('success') or not data.get('data'):
-            print(f"⏳ {match_id}: No data yet")
-            failed += 1
-            continue
-        
-        match_data = data['data']
-        status = match_data.get('status', '')
-        
-        # Check if match is complete
-        if status != 'complete':
-            print(f"⏳ {match_id}: Status {status}")
-            failed += 1
-            continue
-        
-        # Get actual scores
-        home_goals = int(match_data.get('homeGoalCount', 0))
-        away_goals = int(match_data.get('awayGoalCount', 0))
-        total_goals = home_goals + away_goals
-        
-        # Determine actual O/U
-        ou_actual = "OVER 2.5" if total_goals > 2.5 else "UNDER 2.5"
-        
-        # Determine actual winner
-        if home_goals > away_goals:
-            ml_actual = "Home Win"
-        elif away_goals > home_goals:
-            ml_actual = "Away Win"
-        else:
-            ml_actual = "Draw"
-        
-        # Calculate O/U correctness
-        ou_correct = (ou_pred == ou_actual)
-        
-        # Calculate O/U P&L
-        if "Over" in ou_pred:
-            # Predicted Over
-            ou_pnl = over_odds - 1 if ou_actual == "OVER 2.5" else -1.0
-        else:
-            # Predicted Under
-            ou_pnl = under_odds - 1 if ou_actual == "UNDER 2.5" else -1.0
-        
-        # Calculate ML correctness
-        ml_correct = (ml_pred == ml_actual)
-        
-        # Calculate ML P&L
-        if ml_pred == "Home Win":
-            ml_pnl = home_odds - 1 if ml_actual == "Home Win" else -1.0
-        elif ml_pred == "Away Win":
-            ml_pnl = away_odds - 1 if ml_actual == "Away Win" else -1.0
-        else:
-            ml_pnl = 0.0
-        
-        # Update database
-        update_query = sql.SQL("""
-            UPDATE {}
-            SET 
-                home_goals = %s,
-                away_goals = %s,
-                total_goals = %s,
-                ou_actual = %s,
-                ou_correct = %s,
-                ou_pnl = %s,
-                ml_actual = %s,
-                ml_correct = %s,
-                ml_pnl = %s
-            WHERE match_id = %s
-        """).format(sql.Identifier(TABLE_NAME))
-        
-        cursor.execute(update_query, (
-            float(home_goals),
-            float(away_goals),
-            float(total_goals),
-            ou_actual,
-            ou_correct,
-            round(ou_pnl, 2),
-            ml_actual,
-            ml_correct,
-            round(ml_pnl, 2),
-            match_id
-        ))
-        
-        conn.commit()
-        validated += 1
-        
-        print(f"✓ {match_id}: {home_team} {home_goals}-{away_goals} {away_team}")
-        print(f"  O/U: {ou_pred} → {ou_actual} {'✓' if ou_correct else '✗'} | P/L: ${ou_pnl:.2f}")
-        print(f"  ML: {ml_pred} → {ml_actual} {'✓' if ml_correct else '✗'} | P/L: ${ml_pnl:.2f}")
+        time.sleep(0.25)
         
     except Exception as e:
-        print(f"✗ {match_id}: {str(e)[:60]}")
-        failed += 1
-    
-    time.sleep(0.25)
+        print(f"✗ {match_id}: {str(e)[:80]}")
+        failed_fetches += 1
+        conn.rollback()  # Rollback on error to prevent "aborted transaction" cascade
 
 # ==================== SUMMARY ====================
-print(f"\n" + "="*80)
-print("VALIDATION SUMMARY")
+print("\n" + "="*80)
+print("SUMMARY")
 print("="*80)
-print(f"✓ Successfully validated: {validated} matches")
-print(f"✗ Failed/Pending: {failed} matches")
+print(f"✓ Successfully updated: {successful_updates} matches")
+print(f"✗ Failed/Pending: {failed_fetches} matches")
 
-# ==================== STATS ====================
-try:
-    cursor.execute(sql.SQL("""
+if successful_updates > 0:
+    # Calculate accuracy
+    accuracy_query = sql.SQL("""
         SELECT 
             COUNT(*) as total,
-            SUM(CASE WHEN ou_correct THEN 1 ELSE 0 END) as ou_wins,
-            SUM(CASE WHEN ml_correct THEN 1 ELSE 0 END) as ml_wins,
-            ROUND(SUM(ou_pnl)::numeric, 2) as ou_total_pnl,
-            ROUND(SUM(ml_pnl)::numeric, 2) as ml_total_pnl
+            SUM(CASE WHEN ou_correct = 1 THEN 1 ELSE 0 END) as ou_correct_count,
+            SUM(CASE WHEN ml_correct = 1 THEN 1 ELSE 0 END) as ml_correct_count,
+            SUM(ou_pnl) as total_ou_pnl,
+            SUM(ml_pnl) as total_ml_pnl
         FROM {}
-        WHERE home_goals IS NOT NULL
-    """).format(sql.Identifier(TABLE_NAME)))
+        WHERE date = %s AND ou_actual IS NOT NULL
+    """).format(sql.Identifier(TABLE_NAME))
     
-    stats = cursor.fetchone()
-    if stats and stats[0] > 0:
-        total, ou_wins, ml_wins, ou_pnl_total, ml_pnl_total = stats
-        print(f"\nDatabase Statistics:")
-        print(f"  Total validated: {total}")
-        print(f"  O/U Wins: {ou_wins or 0} ({(ou_wins or 0)/total*100:.1f}%)")
-        print(f"  ML Wins: {ml_wins or 0} ({(ml_wins or 0)/total*100:.1f}%)")
-        print(f"  O/U Total P&L: ${ou_pnl_total or 0:.2f}")
-        print(f"  ML Total P&L: ${ml_pnl_total or 0:.2f}")
+    cursor.execute(accuracy_query, (VALIDATION_DATE,))
+    result = cursor.fetchone()
+    
+    if result and result[0] > 0:
+        total, ou_correct_count, ml_correct_count, total_ou_pnl, total_ml_pnl = result
+        print(f"\n📊 ACCURACY METRICS:")
+        print(f"   O/U Accuracy: {ou_correct_count}/{total} ({100*ou_correct_count/total:.1f}%)")
+        print(f"   ML Accuracy: {ml_correct_count}/{total} ({100*ml_correct_count/total:.1f}%)")
+        print(f"\n💰 PROFIT/LOSS:")
+        print(f"   O/U P/L: ${total_ou_pnl:.2f}")
+        print(f"   ML P/L: ${total_ml_pnl:.2f}")
+        print(f"   Total P/L: ${total_ou_pnl + total_ml_pnl:.2f}")
 
-except Exception as e:
-    print(f"⚠ Could not fetch stats: {e}")
+if successful_updates == 0:
+    print(f"\n⚠️  WARNING: No matches were successfully validated")
+    print(f"   This suggests the match IDs are incompatible with the API")
 
 cursor.close()
 conn.close()
 print(f"\n✓ Database connection closed")
 
-print(f"\n" + "="*80)
+print("\n" + "="*80)
 print("✅ VALIDATION COMPLETE!")
+print("="*80)
+print(f"⏰ Completed at: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
 print("="*80)
