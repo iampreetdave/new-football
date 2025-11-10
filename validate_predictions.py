@@ -34,7 +34,7 @@ DB_CONFIG = {
     'password': 'deeptanshu@123'
 }
 
-TABLE_NAME = 'agility_football_v2'
+TABLE_NAME = 'agility_soccer_v2'
 
 print("\n" + "="*80)
 print("AGILITY FOOTBALL PREDICTIONS - CSV-BASED VALIDATION")
