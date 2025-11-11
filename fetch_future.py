@@ -44,7 +44,7 @@ ALLOWED_LEAGUE_IDS = {
 LEAGUE_ID_TO_NAME = {
     12325: "England Premier League",
     15050: "England Premier League",
-    13497: "Europe UEFA ",
+    14924: "Europe UEFA ",
     
     12316: "Spain La Liga",
     14956: "Spain La Liga",
