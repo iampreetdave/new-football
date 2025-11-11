@@ -44,8 +44,8 @@ ALLOWED_LEAGUE_IDS = {
 LEAGUE_ID_TO_NAME = {
     12325: "England Premier League",
     15050: "England Premier League",
-    13497: "Europe UEFA Youth League",
-    16004: "Europe UEFA Youth League",
+    13497: "Europe UEFA ",
+    
     12316: "Spain La Liga",
     14956: "Spain La Liga",
     12530: "Italy Serie A",
