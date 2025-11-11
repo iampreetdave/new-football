@@ -20,8 +20,8 @@ BASE_URL = "https://api.footystats.org"
 ALLOWED_LEAGUE_IDS = {
     # England Premier League
     12325, 15050,
-    # Europe UEFA Youth League
-    13497, 16004,
+    # Europe UEFA
+    14924,
     # Spain La Liga
     12316, 14956,
     # Italy Serie A
