@@ -1,2 +1,3 @@
 match_id,home_id,away_id,league_id,date,league,home_team,away_team,ou_prediction,ou_probability,over_2_5_odds,under_2_5_odds,ml_prediction,ml_probability,home_win_odds,away_win_odds,ou_confidence,ml_confidence,ou_confidence_level,ml_confidence_level
-8353190,1398748,20,13973,2025-11-10,0,San Diego,Portland Timbers,Over 2.5,0.5801456368664282,1.46,2.7,Home Win,0.7435947611086009,1.6,5.66,66.86699295855695,84.61568566651606,MEDIUM,HIGH
+8193741,4821,4866,15717,2025-11-16,0,Felgueiras 1932,Farense,Under 2.5,0.41347677768636487,2.1,1.65,Away Win,0.35229770451330245,2.55,2.7,69.80068226427217,78.86213772920186,MEDIUM,MEDIUM
+8193814,1030,165,15717,2025-11-16,0,Leixões,GD Chaves,Under 2.5,0.4387737615106656,2.13,1.64,Home Win,0.60739731152045,3.15,2.25,58.16406970509382,76.443838691227,MEDIUM,MEDIUM
