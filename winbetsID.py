@@ -10,7 +10,7 @@ db_config = {
     'password': 'deeptanshu@123'
 }
 # Load CSV mapping file
-csv_path = 'mapping.csv'
+csv_path = 'map.csv'
 mapping_df = pd.read_csv(csv_path, encoding='utf-8-sig')
 
 # Create lookup dictionaries with league context to handle teams in multiple leagues
