@@ -35,7 +35,8 @@ ALLOWED_LEAGUE_IDS = {
     # Netherlands Eredivisie
     12322, 14936,
     # Portugal LigaPro
-    12585, 15717,
+    15115,
+
     # Mexico Liga MX
     12136, 15234
 }
@@ -44,7 +45,7 @@ ALLOWED_LEAGUE_IDS = {
 LEAGUE_ID_TO_NAME = {
     12325: "England Premier League",
     15050: "England Premier League",
-    14924: "Europe UEFA ",
+    14924: "UEFA Champions League",
     
     12316: "Spain La Liga",
     14956: "Spain La Liga",
@@ -57,8 +58,8 @@ LEAGUE_ID_TO_NAME = {
     14932: "France Ligue 1",
     12322: "Netherlands Eredivisie",
     14936: "Netherlands Eredivisie",
-    12585: "Portugal LigaPro",
-    15717: "Portugal LigaPro",
+    15115: "Portugal Liga NOS"
+
     12136: "Mexico Liga MX",
     15234: "Mexico Liga MX"
 }
