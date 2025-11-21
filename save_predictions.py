@@ -42,7 +42,7 @@ LEAGUE_MAPPING = {
     14932: "France Ligue 1",
     12322: "Netherlands Eredivisie",
     14936: "Netherlands Eredivisie",
-    15115: "Portugal Liga NOS"
+    15115: "Portugal Liga NOS",
 
     12136: "Mexico Liga MX",
     15234: "Mexico Liga MX"
