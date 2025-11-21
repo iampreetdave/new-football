@@ -30,7 +30,7 @@ LEAGUE_MAPPING = {
     12325: "England Premier League",
     15050: "England Premier League",
     
-    14924: "Europe UEFA ",
+    14924: "UEFA Champions League",
     12316: "Spain La Liga",
     14956: "Spain La Liga",
     12530: "Italy Serie A",
@@ -42,8 +42,8 @@ LEAGUE_MAPPING = {
     14932: "France Ligue 1",
     12322: "Netherlands Eredivisie",
     14936: "Netherlands Eredivisie",
-    12585: "Portugal LigaPro",
-    15717: "Portugal LigaPro",
+    15115: "Portugal Liga NOS"
+
     12136: "Mexico Liga MX",
     15234: "Mexico Liga MX"
 }
