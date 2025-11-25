@@ -26,12 +26,14 @@ API_CONFIGS = [
 ]
 
 # ==================== DATABASE CONFIGURATION ====================
+import os
+
 DB_CONFIG = {
-    'host': 'winbets-db.postgres.database.azure.com',
-    'port': 5432,
-    'database': 'postgres',
-    'user': 'winbets',
-    'password': 'deeptanshu@123'
+    'host': os.getenv('DB_HOST'),
+    'port': int(os.getenv('DB_PORT')),
+    'database': os.getenv('DB_DATABASE'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD')
 }
 
 TABLE_NAME = 'agility_soccer_v2'
@@ -257,6 +259,7 @@ for idx, row in predictions_to_validate.iterrows():
                             ml_correct = %s,
                             ou_pnl = %s,
                             ml_pnl = %s,
+                            status = %s,
                             updated_at = CURRENT_TIMESTAMP
                         WHERE match_id = %s
                     """).format(sql.Identifier(TABLE_NAME))
@@ -271,6 +274,7 @@ for idx, row in predictions_to_validate.iterrows():
                         ml_correct,
                         ou_pnl,
                         ml_pnl,
+                        'SETTLED',
                         str(match_id)
                     ))
                     
