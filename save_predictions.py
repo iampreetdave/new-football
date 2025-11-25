@@ -1,8 +1,10 @@
 """
 Save Football Predictions to PostgreSQL Database
-Reads predictions_output.csv and inserts into agility_football_v2 table
+Reads predictions_output__1_.csv and inserts into agility_soccer_v2 table
 - Checks for existing match_ids to avoid duplicates
 - Maps league_id to league_name and stores in league column
+- Calculates ou_grade and ml_grade from confidence values
+- Sets status to PENDING for all predictions
 - Handles NULL values properly
 - Simple and straightforward storage
 """
@@ -12,14 +14,15 @@ import psycopg2
 from psycopg2 import sql
 from datetime import datetime
 import sys
+import os
 
 # ==================== DATABASE CONFIGURATION ====================
 DB_CONFIG = {
-    'host': 'winbets-db.postgres.database.azure.com',
-    'port': 5432,
-    'database': 'postgres',
-    'user': 'winbets',
-    'password': 'deeptanshu@123'
+    'host': os.getenv('DB_HOST'),
+    'port': int(os.getenv('DB_PORT')),
+    'database': os.getenv('DB_DATABASE'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD')
 }
 
 TABLE_NAME = 'agility_soccer_v2'
@@ -56,8 +59,37 @@ def get_league_name(league_id):
     except:
         return "Unknown League"
 
+def get_grade(confidence):
+    """Convert confidence value (0-100) to letter grade"""
+    if pd.isna(confidence):
+        return None
+    try:
+        conf = float(confidence)
+        if conf >= 90:
+            return "A+"
+        elif conf >= 85:
+            return "A"
+        elif conf >= 80:
+            return "A-"
+        elif conf >= 75:
+            return "B+"
+        elif conf >= 70:
+            return "B"
+        elif conf >= 65:
+            return "B-"
+        elif conf >= 60:
+            return "C+"
+        elif conf >= 55:
+            return "C"
+        elif conf >= 50:
+            return "C-"
+        else:
+            return "D"
+    except:
+        return None
+
 print("="*80)
-print("SAVING PREDICTIONS TO DATABASE")
+print("SAVING PREDICTIONS TO DATABASE - V2 TABLE")
 print("="*80)
 print(f"Timestamp: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
 
@@ -71,6 +103,15 @@ try:
     # Map league_id to league_name
     df['league_name'] = df['league_id'].apply(get_league_name)
     print(f"✓ Mapped league names from league IDs")
+    
+    # Calculate grades from confidence values
+    df['ou_grade'] = df['ou_confidence'].apply(get_grade)
+    df['ml_grade'] = df['ml_confidence'].apply(get_grade)
+    print(f"✓ Calculated ou_grade and ml_grade from confidence values")
+    
+    # Set status to PENDING for all predictions
+    df['status'] = 'PENDING'
+    print(f"✓ Set status to PENDING for all records")
     
     # Parse and format date
     df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d', errors='coerce')
@@ -133,10 +174,11 @@ insert_query = sql.SQL("""
         home_team, away_team, ou_prediction, ou_probability,
         over_2_5_odds, under_2_5_odds, ml_prediction, ml_probability,
         home_win_odds, away_win_odds, ou_confidence, ml_confidence,
-        ou_confidence_level, ml_confidence_level
+        ou_confidence_level, ml_confidence_level, ou_grade, ml_grade, status
     ) VALUES (
         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+        %s, %s, %s
     )
 """).format(sql.Identifier(TABLE_NAME))
 
@@ -167,7 +209,10 @@ for idx, row in new_data.iterrows():
             row['ou_confidence'],
             row['ml_confidence'],
             row['ou_confidence_level'],
-            row['ml_confidence_level']
+            row['ml_confidence_level'],
+            row['ou_grade'],
+            row['ml_grade'],
+            row['status']
         ]
         
         # Convert NaN to None
