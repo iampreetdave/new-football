@@ -2,14 +2,16 @@ import psycopg2
 import pandas as pd
 from psycopg2 import Error
 import os
+
 # Database credentials
 DB_CONFIG = {
     'host': os.getenv('DB_HOST'),
-    'port': int(os.getenv('DB_PORT')),
+    'port': int(os.getenv('DB_PORT', 5432)),
     'database': os.getenv('DB_DATABASE'),
     'user': os.getenv('DB_USER'),
     'password': os.getenv('DB_PASSWORD')
 }
+
 # Load CSV mapping file
 csv_path = 'map.csv'
 mapping_df = pd.read_csv(csv_path, encoding='utf-8-sig')
@@ -36,13 +38,15 @@ print(f"  - Teams: {len(team_name_lookup)}")
 print(f"  - Team IDs: {len(team_id_lookup)}")
 print(f"  - Leagues: {len(league_lookup)}")
 
+connection = None
+
 try:
-    connection = psycopg2.connect(**db_config)
+    connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor()
     
     # Fetch only rows with NULL WB columns
     select_query = """
-    SELECT id, home_team, away_team, home_id, away_id, league, 
+    SELECT match_id, home_team, away_team, home_id, away_id, league, 
            home_TeamName_Wb, away_TeamName_Wb, home_TeamId_Wb, away_TeamId_Wb, league_wb
     FROM agility_soccer_v2
     WHERE home_TeamName_Wb IS NULL OR away_TeamName_Wb IS NULL 
@@ -57,7 +61,7 @@ try:
     updated_count = 0
     
     for row in rows:
-        row_id, home_team, away_team, home_id, away_id, league, \
+        match_id, home_team, away_team, home_id, away_id, league, \
         home_TeamName_Wb, away_TeamName_Wb, home_TeamId_Wb, away_TeamId_Wb, league_wb = row
         
         updates = {}
@@ -102,8 +106,8 @@ try:
         # Update database if there are values to update
         if updates:
             set_clause = ", ".join([f"{key} = %s" for key in updates.keys()])
-            values = list(updates.values()) + [row_id]
-            update_query = f"UPDATE agility_soccer_v2 SET {set_clause} WHERE id = %s"
+            values = list(updates.values()) + [match_id]
+            update_query = f"UPDATE agility_soccer_v2 SET {set_clause} WHERE match_id = %s"
             cursor.execute(update_query, values)
             updated_count += 1
     
@@ -112,7 +116,8 @@ try:
     
 except Error as e:
     print(f"Error: {e}")
-    connection.rollback()
+    if connection:
+        connection.rollback()
 finally:
     if connection:
         cursor.close()
