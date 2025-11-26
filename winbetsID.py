@@ -47,7 +47,7 @@ try:
     
     # Fetch all rows from database including WB columns
     select_query = """
-    SELECT match_id, home_team, away_team, home_id, away_id, league_name, 
+    SELECT match_id, home_team, away_team, home_id, away_id, league, 
            home_TeamName_Wb, away_TeamName_Wb, home_TeamId_Wb, away_TeamId_Wb, league_wb
     FROM agility_soccer_v2
     """
@@ -59,7 +59,7 @@ try:
     updated_count = 0
     
     for row in rows:
-        match_id, home_team, away_team, home_id, away_id, league_name, \
+        match_id, home_team, away_team, home_id, away_id, league, \
         home_TeamName_Wb, away_TeamName_Wb, home_TeamId_Wb, away_TeamId_Wb, league_wb = row
         
         updates = {}
@@ -67,7 +67,7 @@ try:
         # Map home team name (only if NULL)
         if home_TeamName_Wb is None and home_team:
             home_team_clean = home_team.strip()
-            league_clean = league_name.strip()
+            league_clean = league.strip()
             wb_home_name = team_name_lookup.get((home_team_clean, league_clean))
             if wb_home_name:
                 updates['home_TeamName_Wb'] = wb_home_name
@@ -75,29 +75,29 @@ try:
         # Map away team name (only if NULL)
         if away_TeamName_Wb is None and away_team:
             away_team_clean = away_team.strip()
-            league_clean = league_name.strip()
+            league_clean = league.strip()
             wb_away_name = team_name_lookup.get((away_team_clean, league_clean))
             if wb_away_name:
                 updates['away_TeamName_Wb'] = wb_away_name
         
         # Map home team ID (only if NULL)
         if home_TeamId_Wb is None and home_id:
-            league_clean = league_name.strip()
+            league_clean = league.strip()
             wb_home_id = team_id_lookup.get((home_id, league_clean))
             if wb_home_id:
                 updates['home_TeamId_Wb'] = wb_home_id
         
         # Map away team ID (only if NULL)
         if away_TeamId_Wb is None and away_id:
-            league_clean = league_name.strip()
+            league_clean = league.strip()
             wb_away_id = team_id_lookup.get((away_id, league_clean))
             if wb_away_id:
                 updates['away_TeamId_Wb'] = wb_away_id
         
         # Map league (only if NULL)
-        if league_wb is None and league_name:
-            league_name_clean = league_name.strip()
-            wb_league = league_lookup.get(league_name_clean)
+        if league_wb is None and league:
+            league_clean = league.strip()
+            wb_league = league_lookup.get(league_clean)
             if wb_league:
                 updates['league_wb'] = wb_league
         
