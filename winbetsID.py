@@ -5,6 +5,7 @@ from psycopg2 import Error
 # Database credentials
 import os
 
+# Primary database (old credentials)
 DB_CONFIG = {
     'host': os.getenv('DB_HOST'),
     'port': int(os.getenv('DB_PORT', 5432)),
@@ -12,6 +13,17 @@ DB_CONFIG = {
     'user': os.getenv('DB_USER'),
     'password': os.getenv('DB_PASSWORD')
 }
+
+# Secondary database (new credentials - WINBETS)
+DB_CONFIG_WINBETS = {
+    'host': os.getenv('WINBETS_DB_HOST'),
+    'port': int(os.getenv('WINBETS_DB_PORT', 5432)),
+    'database': os.getenv('WINBETS_DB_DATABASE'),
+    'user': os.getenv('WINBETS_DB_USER'),
+    'password': os.getenv('WINBETS_DB_PASSWORD')
+}
+
+TABLE_NAME = 'agility_soccer_v2'
 
 # Load CSV mapping file
 csv_path = 'map.csv'
@@ -39,85 +51,105 @@ print(f"  - Teams: {len(team_name_lookup)}")
 print(f"  - Team IDs: {len(team_id_lookup)}")
 print(f"  - Leagues: {len(league_lookup)}")
 
-connection = None
+# Process both databases
+def process_database(db_config, db_name):
+    """Process ID mapping for a specific database"""
+    print(f"\n{'='*60}")
+    print(f"Processing {db_name}")
+    print(f"{'='*60}")
+    
+    connection = None
 
-try:
-    connection = psycopg2.connect(**DB_CONFIG)
-    cursor = connection.cursor()
-    
-    # Fetch all rows from database including WB columns
-    select_query = """
-    SELECT match_id, home_team, away_team, home_id, away_id, league, 
-           home_TeamName_Wb, away_TeamName_Wb, home_TeamId_Wb, away_TeamId_Wb, league_wb
-    FROM agility_soccer_v2
-    """
-    cursor.execute(select_query)
-    rows = cursor.fetchall()
-    
-    print(f"\n✓ Fetched {len(rows)} rows from database")
-    
-    updated_count = 0
-    
-    for row in rows:
-        match_id, home_team, away_team, home_id, away_id, league, \
-        home_TeamName_Wb, away_TeamName_Wb, home_TeamId_Wb, away_TeamId_Wb, league_wb = row
+    try:
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor()
+        print(f"✓ Connected to {db_name}")
         
-        updates = {}
+        # Fetch all rows from database including WB columns
+        select_query = """
+        SELECT match_id, home_team, away_team, home_id, away_id, league, 
+               home_TeamName_Wb, away_TeamName_Wb, home_TeamId_Wb, away_TeamId_Wb, league_wb
+        FROM agility_soccer_v2
+        """
+        cursor.execute(select_query)
+        rows = cursor.fetchall()
         
-        # Map home team name (only if NULL)
-        if home_TeamName_Wb is None and home_team:
-            home_team_clean = home_team.strip()
-            league_clean = league.strip()
-            wb_home_name = team_name_lookup.get((home_team_clean, league_clean))
-            if wb_home_name:
-                updates['home_TeamName_Wb'] = wb_home_name
+        print(f"✓ Fetched {len(rows)} rows from {db_name}")
         
-        # Map away team name (only if NULL)
-        if away_TeamName_Wb is None and away_team:
-            away_team_clean = away_team.strip()
-            league_clean = league.strip()
-            wb_away_name = team_name_lookup.get((away_team_clean, league_clean))
-            if wb_away_name:
-                updates['away_TeamName_Wb'] = wb_away_name
+        updated_count = 0
         
-        # Map home team ID (only if NULL)
-        if home_TeamId_Wb is None and home_id:
-            league_clean = league.strip()
-            wb_home_id = team_id_lookup.get((home_id, league_clean))
-            if wb_home_id:
-                updates['home_TeamId_Wb'] = wb_home_id
+        for row in rows:
+            match_id, home_team, away_team, home_id, away_id, league, \
+            home_TeamName_Wb, away_TeamName_Wb, home_TeamId_Wb, away_TeamId_Wb, league_wb = row
+            
+            updates = {}
+            
+            # Map home team name (only if NULL)
+            if home_TeamName_Wb is None and home_team:
+                home_team_clean = home_team.strip()
+                league_clean = league.strip()
+                wb_home_name = team_name_lookup.get((home_team_clean, league_clean))
+                if wb_home_name:
+                    updates['home_TeamName_Wb'] = wb_home_name
+            
+            # Map away team name (only if NULL)
+            if away_TeamName_Wb is None and away_team:
+                away_team_clean = away_team.strip()
+                league_clean = league.strip()
+                wb_away_name = team_name_lookup.get((away_team_clean, league_clean))
+                if wb_away_name:
+                    updates['away_TeamName_Wb'] = wb_away_name
+            
+            # Map home team ID (only if NULL)
+            if home_TeamId_Wb is None and home_id:
+                league_clean = league.strip()
+                wb_home_id = team_id_lookup.get((home_id, league_clean))
+                if wb_home_id:
+                    updates['home_TeamId_Wb'] = wb_home_id
+            
+            # Map away team ID (only if NULL)
+            if away_TeamId_Wb is None and away_id:
+                league_clean = league.strip()
+                wb_away_id = team_id_lookup.get((away_id, league_clean))
+                if wb_away_id:
+                    updates['away_TeamId_Wb'] = wb_away_id
+            
+            # Map league (only if NULL)
+            if league_wb is None and league:
+                league_clean = league.strip()
+                wb_league = league_lookup.get(league_clean)
+                if wb_league:
+                    updates['league_wb'] = wb_league
+            
+            # Update database if there are values to update
+            if updates:
+                set_clause = ", ".join([f"{key} = %s" for key in updates.keys()])
+                values = list(updates.values()) + [match_id]
+                update_query = f"UPDATE agility_soccer_v2 SET {set_clause} WHERE match_id = %s"
+                cursor.execute(update_query, values)
+                updated_count += 1
         
-        # Map away team ID (only if NULL)
-        if away_TeamId_Wb is None and away_id:
-            league_clean = league.strip()
-            wb_away_id = team_id_lookup.get((away_id, league_clean))
-            if wb_away_id:
-                updates['away_TeamId_Wb'] = wb_away_id
+        connection.commit()
+        print(f"✓ Updated {updated_count} rows in {db_name} successfully!")
         
-        # Map league (only if NULL)
-        if league_wb is None and league:
-            league_clean = league.strip()
-            wb_league = league_lookup.get(league_clean)
-            if wb_league:
-                updates['league_wb'] = wb_league
-        
-        # Update database if there are values to update
-        if updates:
-            set_clause = ", ".join([f"{key} = %s" for key in updates.keys()])
-            values = list(updates.values()) + [match_id]
-            update_query = f"UPDATE agility_soccer_v2 SET {set_clause} WHERE match_id = %s"
-            cursor.execute(update_query, values)
-            updated_count += 1
-    
-    connection.commit()
-    print(f"\n✓ Updated {updated_count} rows successfully!")
-    
-except Error as e:
-    print(f"Error: {e}")
-    if connection:
-        connection.rollback()
-finally:
-    if connection:
-        cursor.close()
-        connection.close()
-        print("Database connection closed.")
+    except Error as e:
+        print(f"✗ Error in {db_name}: {e}")
+        if connection:
+            connection.rollback()
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
+            print(f"✓ {db_name} connection closed")
+
+# Process both databases
+print("\n" + "="*60)
+print("DUAL DATABASE ID MAPPING")
+print("="*60)
+
+process_database(DB_CONFIG, "PRIMARY (Old Credentials)")
+process_database(DB_CONFIG_WINBETS, "WINBETS (New Credentials)")
+
+print("\n" + "="*60)
+print("✅ ID MAPPING COMPLETE - Both Databases Synced")
+print("="*60)
