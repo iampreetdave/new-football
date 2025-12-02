@@ -13,11 +13,19 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
+      # Primary Database
       DB_HOST: ${{ secrets.DB_HOST }}
       DB_PORT: ${{ secrets.DB_PORT }}
       DB_DATABASE: ${{ secrets.DB_DATABASE }}
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      
+      # Secondary Database
+      WINBETS_DB_HOST: ${{ secrets.WINBETS_DB_HOST }}
+      WINBETS_DB_PORT: ${{ secrets.WINBETS_DB_PORT }}
+      WINBETS_DB_DATABASE: ${{ secrets.WINBETS_DB_DATABASE }}
+      WINBETS_DB_USER: ${{ secrets.WINBETS_DB_USER }}
+      WINBETS_DB_PASSWORD: ${{ secrets.WINBETS_DB_PASSWORD }}
     
     steps:
     - name: Checkout repository
@@ -60,22 +68,22 @@ jobs:
         git config --local user.name "github-actions[bot]"
         
         # THE FIX: Pull before pushing to avoid conflicts
-        echo "🔄 Syncing with remote..."
+        echo "ðŸ"„ Syncing with remote..."
         git pull --rebase origin main || git pull --rebase origin master || echo "Already up to date"
         
         # Add generated CSV files
-        echo "📝 Adding prediction files..."
+        echo "ðŸ" Adding prediction files..."
         git add -f live.csv extracted_features_complete.csv predictions_output.csv
         
         # Check if there are changes
         if git diff --staged --quiet; then
-          echo "ℹ️ No changes to commit"
+          echo "â„¹ï¸ No changes to commit"
           exit 0
         fi
         
         # Commit changes
-        echo "✅ Changes detected, committing..."
-        git commit -m "🤖 Generated Predictions as boss wanted (-HAPI)"
+        echo "âœ… Changes detected, committing..."
+        git commit -m "ðŸ¤– Generated Predictions as boss wanted (-HAPI)"
         
         # Push with retry logic (5 attempts)
         max_retries=5
@@ -83,31 +91,31 @@ jobs:
         
         while [ $retry_count -lt $max_retries ]; do
           retry_count=$((retry_count+1))
-          echo "🔤 Push attempt $retry_count/$max_retries..."
+          echo "ðŸ"¤ Push attempt $retry_count/$max_retries..."
           
           # Try main branch first
           if git push origin main 2>&1; then
-            echo "✅ Successfully pushed to main!"
+            echo "âœ… Successfully pushed to main!"
             exit 0
           fi
           
           # Try master branch as fallback
           if git push origin master 2>&1; then
-            echo "✅ Successfully pushed to master!"
+            echo "âœ… Successfully pushed to master!"
             exit 0
           fi
           
           # If not last attempt, sync and retry
           if [ $retry_count -lt $max_retries ]; then
-            echo "⏳ Retrying in 10 seconds..."
+            echo "â³ Retrying in 10 seconds..."
             sleep 10
-            echo "🔄 Syncing again..."
+            echo "ðŸ"„ Syncing again..."
             git pull --rebase origin main 2>&1 || git pull --rebase origin master 2>&1 || true
           fi
         done
         
         # All retries failed
-        echo "❌ Failed to push after $max_retries attempts"
+        echo "âŒ Failed to push after $max_retries attempts"
         exit 1
     
     # Optional: Upload as backup
