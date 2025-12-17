@@ -1,4 +1,4 @@
 match_id,home_id,away_id,league_id,date,league,home_team,away_team,ou_prediction,ou_probability,over_2_5_odds,under_2_5_odds,ml_prediction,ml_probability,home_win_odds,away_win_odds,ou_confidence,ml_confidence,ou_confidence_level,ml_confidence_level
 8227681,33,39,14968,2025-12-19,0,Borussia Dortmund,Borussia M'gladbach,Over 2.5,0.5726111837627492,1.53,2.45,Away Win,0.44601641840414175,1.48,5.7,63.40114453086464,54.8324475340948,MEDIUM,MEDIUM
-8200579,288,298,14956,2025-12-19,0,Valencia CF,RCD Mallorca,Under 2.5,0.42418026332439496,2.38,1.6,Away Win,0.3687421264016366,1.95,4.2,64.87707887077832,77.87547241590181,MEDIUM,MEDIUM
+8200579,288,298,14956,2025-12-19,0,Valencia CF,RCD Mallorca,Under 2.5,0.42418026332439496,2.38,1.6,Away Win,0.3666105420605832,1.95,4.0,64.87707887077832,78.00336747636501,MEDIUM,MEDIUM
 8227395,164,172,15115,2025-12-19,0,GD Estoril Praia,Sporting Braga,Over 2.5,0.587335593184848,1.85,1.85,Away Win,0.32667832305739286,4.2,1.85,70.17437286503005,80.39930061655643,MEDIUM,HIGH
