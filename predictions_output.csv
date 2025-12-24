@@ -1,2 +1,2 @@
 match_id,home_id,away_id,league_id,date,league,home_team,away_team,ou_prediction,ou_probability,over_2_5_odds,under_2_5_odds,ml_prediction,ml_probability,home_win_odds,away_win_odds,ou_confidence,ml_confidence,ou_confidence_level,ml_confidence_level
-8227360,175,114,15115,2025-12-23,0,Vitória Guimarães,Sporting CP,Over 2.5,0.5549315968909958,1.68,2.05,Away Win,0.22682032088415016,8,1.4,55.268534569858076,86.39078074695098,MEDIUM,HIGH
+8223542,149,157,15050,2025-12-26,0,Manchester United,Newcastle United,Over 2.5,0.6148447815016685,1.64,2.25,Away Win,0.49098127530105434,2.45,2.64,76.89068689010011,34.14861336151502,MEDIUM,LOW
