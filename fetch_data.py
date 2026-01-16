@@ -3,6 +3,8 @@ import requests
 import json
 import time
 import numpy as np
+import os
+
 
 API_KEY = os.getenv("FOOTYSTATSAPI")
 API_BASE_URL = "https://api.football-data-api.com/lastx"
