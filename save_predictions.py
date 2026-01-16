@@ -70,7 +70,24 @@ def get_league_name(league_id):
     except:
         return "Unknown League"
 
-def get_grade(confidence):
+def get_ou_grade(confidence):
+    """Convert ou_confidence value (0-100) to letter grade based on ROI thresholds"""
+    if pd.isna(confidence):
+        return 'C'
+    try:
+        conf = float(confidence)
+        if conf >= 78.0:
+            return "A"
+        elif conf >= 65.7:
+            return "B"
+        elif conf >= 35.7:
+            return "D"
+        else:
+            return "C"
+    except:
+        return 'C'
+
+def get_ml_grade(confidence):
     """Convert confidence value (0-100) to letter grade"""
     if pd.isna(confidence):
         return None
@@ -116,8 +133,8 @@ try:
     print(f"✓ Mapped league names from league IDs")
     
     # Calculate grades from confidence values
-    df['ou_grade'] = df['ou_confidence'].apply(get_grade)
-    df['ml_grade'] = df['ml_confidence'].apply(get_grade)
+    df['ou_grade'] = df['ou_confidence'].apply(get_ou_grade)
+    df['ml_grade'] = df['ml_confidence'].apply(get_ml_grade)
     print(f"✓ Calculated ou_grade and ml_grade from confidence values")
     
     # Set status to PENDING for all predictions
