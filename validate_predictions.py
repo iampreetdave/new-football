@@ -16,7 +16,7 @@ import os
 warnings.filterwarnings('ignore')
 
 # ==================== API CONFIGURATION ====================
-API_KEY = "1eac22f8ec8e6da731a49adeae1148f14d6ceca13db5a9ffba65618f97406f4e"
+API_KEY = os.getenv("FOOTYSTATSAPI")
 
 # Try multiple API endpoint configurations
 API_CONFIGS = [
