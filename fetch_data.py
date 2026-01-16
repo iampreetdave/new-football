@@ -4,7 +4,7 @@ import json
 import time
 import numpy as np
 
-API_KEY = "1eac22f8ec8e6da731a49adeae1148f14d6ceca13db5a9ffba65618f97406f4e"
+API_KEY = os.getenv("FOOTYSTATSAPI")
 API_BASE_URL = "https://api.football-data-api.com/lastx"
 API_LEAGUE_URL = "https://api.football-data-api.com/league-season"
 
