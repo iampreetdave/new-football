@@ -10,7 +10,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import time
-
+import os
 # Configuration
 API_KEY =os.getenv("FOOTYSTATSAPI")
 BASE_URL = "https://api.footystats.org"
