@@ -40,3 +40,5 @@ jobs:
     
     - name: Run Python script
       run: python winbetsID.py
+    - name: Run v3
+      run: python v3_over_under.py
