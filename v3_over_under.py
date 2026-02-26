@@ -1,5 +1,5 @@
 """
-Update Over/Under Predictions in agility_soccer_v3
+Update Over/Under Predictions in predictions_soccer_v3_ourmodel
 ====================================================
 
 Reads predictions_output.csv and updates ONLY these columns:
@@ -10,7 +10,7 @@ Matches records by match_id and updates existing records.
 No new records are inserted, only updates existing ones.
 
 Database: winbets-predictions.postgres.database.azure.com
-Table: agility_soccer_v3
+Table: predictions_soccer_v3_ourmodel
 """
 
 import pandas as pd
@@ -30,12 +30,12 @@ DB_CONFIG = {
     'password': os.getenv('DB_PASSWORD', 'Constantinople@1900')
 }
 
-TABLE_NAME = 'agility_soccer_v3'
+TABLE_NAME = 'predictions_soccer_v3_ourmodel'
 CSV_FILE = 'predictions_output.csv'
 BATCH_SIZE = 100
 
 print("="*80)
-print("UPDATE OVER/UNDER PREDICTIONS IN agility_soccer_v3")
+print("UPDATE OVER/UNDER PREDICTIONS IN predictions_soccer_v3_ourmodel")
 print("="*80)
 print(f"Timestamp: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
 print(f"Table: {TABLE_NAME}")
