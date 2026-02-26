@@ -35,7 +35,7 @@ DB_CONFIG = {
     'password': os.getenv('DB_PASSWORD')
 }
 
-TABLE_NAME = 'agility_soccer_v2'
+TABLE_NAME = 'predictions_soccer_v2_ourmodel'
 
 print("\n" + "="*80)
 print("AGILITY FOOTBALL PREDICTIONS - DATABASE-DRIVEN VALIDATION")
