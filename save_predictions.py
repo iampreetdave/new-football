@@ -1,6 +1,6 @@
 """
 Save Football Predictions to PostgreSQL Database
-Reads predictions_output.csv and inserts into agility_soccer_v2 table
+Reads predictions_output.csv and inserts into predictions_soccer_v2_ourmodel table
 Syncs to BOTH databases (PRIMARY + WINBETS)
 - Checks for existing match_ids to avoid duplicates
 - Maps league_id to league_name and stores in league column
@@ -36,7 +36,7 @@ DB_CONFIG_WINBETS = {
     'password': os.getenv('WINBETS_DB_PASSWORD')
 }
 
-TABLE_NAME = 'agility_soccer_v2'
+TABLE_NAME = 'predictions_soccer_v2_ourmodel'
 CSV_FILE = 'predictions_output.csv'
 
 # ==================== LEAGUE ID MAPPING ====================
