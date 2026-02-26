@@ -23,7 +23,7 @@ DB_CONFIG_WINBETS = {
     'password': os.getenv('WINBETS_DB_PASSWORD')
 }
 
-TABLE_NAME = 'agility_soccer_v2'
+TABLE_NAME = 'predictions_soccer_v2_ourmodel'
 
 # Load CSV mapping file
 csv_path = 'map.csv'
@@ -69,7 +69,7 @@ def process_database(db_config, db_name):
         select_query = """
         SELECT match_id, home_team, away_team, home_id, away_id, league, 
                home_TeamName_Wb, away_TeamName_Wb, home_TeamId_Wb, away_TeamId_Wb, league_wb
-        FROM agility_soccer_v2
+        FROM predictions_soccer_v2_ourmodel
         """
         cursor.execute(select_query)
         rows = cursor.fetchall()
@@ -125,7 +125,7 @@ def process_database(db_config, db_name):
             if updates:
                 set_clause = ", ".join([f"{key} = %s" for key in updates.keys()])
                 values = list(updates.values()) + [match_id]
-                update_query = f"UPDATE agility_soccer_v2 SET {set_clause} WHERE match_id = %s"
+                update_query = f"UPDATE predictions_soccer_v2_ourmodel SET {set_clause} WHERE match_id = %s"
                 cursor.execute(update_query, values)
                 updated_count += 1
         
