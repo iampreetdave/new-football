@@ -58,7 +58,7 @@ jobs:
       run: python genrate_predictions.py
     
     - name: Step 4 - Save Predictions to Database
-      run: python save_predictions.py
+      run: python new_save.py
         
     - name: Commit and push results
       run: |
