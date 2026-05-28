@@ -1,3 +1,2 @@
 match_id,home_id,away_id,league_id,date,league,home_team,away_team,ou_prediction,ou_probability,over_2_5_odds,under_2_5_odds,ml_prediction,ml_probability,home_win_odds,away_win_odds,ou_confidence,ml_confidence,ou_confidence_level,ml_confidence_level
-8534828,1422,1432,15234,2026-05-25,0,Pumas UNAM,Cruz Azul,Over 2.5,0.5377006569141,2.0,1.83,Away Win,0.22675856103571512,3.09,2.28,47.34230218048599,86.3944863378571,LOW,HIGH
-8391044,6490,18,16504,2026-05-25,0,Los Angeles FC,Seattle Sounders,Over 2.5,0.5856252108215859,1.63,2.21,Home Win,0.5816636699752903,1.91,3.5,69.38759697792952,67.56528818863353,MEDIUM,MEDIUM
+8529174,68,59,14924,2026-05-30,0,PSG,Arsenal,Over 2.5,0.5494807505627707,2,1.82,Home Win,0.5223836095796284,2.3,3.15,52.761145258874514,40.29646040662905,MEDIUM,LOW
