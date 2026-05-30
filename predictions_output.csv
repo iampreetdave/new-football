@@ -1,2 +1,2 @@
 match_id,home_id,away_id,league_id,date,league,home_team,away_team,ou_prediction,ou_probability,over_2_5_odds,under_2_5_odds,ml_prediction,ml_probability,home_win_odds,away_win_odds,ou_confidence,ml_confidence,ou_confidence_level,ml_confidence_level
-8529174,68,59,14924,2026-05-30,0,PSG,Arsenal,Over 2.5,0.5494807505627707,2,1.82,Home Win,0.5176859408722766,2.33,2.9,52.761145258874514,38.13553280124724,MEDIUM,LOW
+8529174,68,59,14924,2026-05-30,0,PSG,Arsenal,Over 2.5,0.5466659107271573,2,1.72,Home Win,0.5224589210954438,2.26,3.1,51.466318934492364,40.33110370390414,MEDIUM,LOW
